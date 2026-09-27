@@ -1,13 +1,13 @@
 class_name TypewriterLabel
 extends RichTextLabel
 
-signal termine
+signal finished
 
-var _vitesse: VitesseEcriture
+var _speed: TypingSpeed
 var _accum: float = 0.0
-var _positions_mots: Array[int] = []
-var _index_mot: int = 0
-var _en_cours: bool = false
+var _word_end_positions: Array[int] = []
+var _word_index: int = 0
+var _running: bool = false
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -18,53 +18,53 @@ func _ready() -> void:
 	visible_characters = 0
 	set_process(false)
 
-func preparer(texte: String, vitesse: VitesseEcriture) -> void:
-	text = texte
-	_vitesse = vitesse
+func prepare(paragraph_text: String, speed: TypingSpeed) -> void:
+	text = paragraph_text
+	_speed = speed
 	visible_characters = 0
-	_index_mot = 0
-	_positions_mots = _positions_fins_de_mots(texte)
-	_en_cours = false
+	_word_index = 0
+	_word_end_positions = _compute_word_end_positions(paragraph_text)
+	_running = false
 
-func demarrer() -> void:
-	_en_cours = true
+func start() -> void:
+	_running = true
 	_accum = 0.0
 	set_process(true)
 
-func terminer_instantanement() -> void:
+func complete_instantly() -> void:
 	if visible_characters == -1:
 		return
 	visible_characters = -1
-	_en_cours = false
+	_running = false
 	set_process(false)
-	termine.emit()
+	finished.emit()
 
-func est_en_cours() -> bool:
-	return _en_cours
+func is_running() -> bool:
+	return _running
 
 func _process(delta: float) -> void:
 	_accum += delta
-	var intervalle := 1.0 / maxf(_vitesse.valeur, 0.01)
-	while _accum >= intervalle and _en_cours:
-		_accum -= intervalle
-		_avancer()
+	var interval := 1.0 / maxf(_speed.value, 0.01)
+	while _accum >= interval and _running:
+		_accum -= interval
+		_advance()
 
-func _avancer() -> void:
-	if _vitesse.mode == VitesseEcriture.Mode.MOT:
-		_index_mot += 1
-		if _index_mot >= _positions_mots.size():
-			terminer_instantanement()
+func _advance() -> void:
+	if _speed.mode == TypingSpeed.Mode.WORD:
+		_word_index += 1
+		if _word_index >= _word_end_positions.size():
+			complete_instantly()
 		else:
-			visible_characters = _positions_mots[_index_mot]
+			visible_characters = _word_end_positions[_word_index]
 	else:
-		visible_characters += maxi(_vitesse.taille_bloc, 1)
+		visible_characters += maxi(_speed.chunk_size, 1)
 		if visible_characters >= text.length():
-			terminer_instantanement()
+			complete_instantly()
 
-func _positions_fins_de_mots(texte: String) -> Array[int]:
+func _compute_word_end_positions(paragraph_text: String) -> Array[int]:
 	var positions: Array[int] = []
 	var regex := RegEx.new()
 	regex.compile("\\S+")
-	for m in regex.search_all(texte):
+	for m in regex.search_all(paragraph_text):
 		positions.append(m.get_end())
 	return positions

@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://crlcmt608p3yr"]
 
-[ext_resource type="Script" uid="uid://3lqlofjcoomk" path="res://scenes/reader/TestLecteur.gd" id="1"]
+[ext_resource type="Script" uid="uid://3lqlofjcoomk" path="res://scenes/reader/TestReader.gd" id="1"]
 [ext_resource type="Script" uid="uid://0pro7q3qbuk8" path="res://scenes/reader/PageContainer.gd" id="2"]
 
-[node name="TestLecteur" type="Control" unique_id=1547957385]
+[node name="TestReader" type="Control" unique_id=1547957385]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -37,6 +37,6 @@ offset_right = -20.0
 offset_bottom = -20.0
 grow_horizontal = 0
 grow_vertical = 0
-text = "Mode : Lettre"
+text = "Mode: Letter"
 
 [connection signal="pressed" from="ModeButton" to="." method="_on_mode_button_pressed"]

@@ -1,61 +1,61 @@
 class_name PageContainer
 extends VBoxContainer
 
-## Un paragraphe fixe sa place sur la page en fonction de sa hauteur
-## RÉELLE une fois entièrement écrit, mesurée AVANT de démarrer l'animation
-## (sinon un paragraphe en cours d'écriture peut sembler tenir puis déborder).
+## A paragraph's place on the page is decided by its REAL height once fully
+## typed, measured BEFORE the reveal animation starts (otherwise a paragraph
+## mid-animation could look like it fits and then overflow).
 
-signal paragraphe_affiche(paragraphe: Paragraphe)
-signal chapitre_titre(paragraphe: Paragraphe)
+signal paragraph_displayed(paragraph: Paragraph)
+signal chapter_title(paragraph: Paragraph)
 
-var livre: Livre
-var index_courant: int = -1
+var book: Book
+var current_index: int = -1
 
-var _label_en_cours: TypewriterLabel
+var _current_label: TypewriterLabel
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-func demarrer_livre(nouveau_livre: Livre) -> void:
-	livre = nouveau_livre
-	index_courant = -1
-	_vider_page()
+func start_book(new_book: Book) -> void:
+	book = new_book
+	current_index = -1
+	_clear_page()
 
-func avancer() -> void:
-	if _label_en_cours != null and _label_en_cours.est_en_cours():
-		_label_en_cours.terminer_instantanement()
+func advance() -> void:
+	if _current_label != null and _current_label.is_running():
+		_current_label.complete_instantly()
 		return
-	index_courant += 1
-	if index_courant >= livre.paragraphes.size():
+	current_index += 1
+	if current_index >= book.paragraphs.size():
 		return
-	var paragraphe: Paragraphe = livre.paragraphes[index_courant]
-	if paragraphe.est_debut_chapitre:
-		_vider_page()
-		chapitre_titre.emit(paragraphe)
+	var paragraph: Paragraph = book.paragraphs[current_index]
+	if paragraph.is_chapter_start:
+		_clear_page()
+		chapter_title.emit(paragraph)
 		return
-	_ajouter_paragraphe(paragraphe)
+	_add_paragraph(paragraph)
 
-func _ajouter_paragraphe(paragraphe: Paragraphe) -> void:
+func _add_paragraph(paragraph: Paragraph) -> void:
 	var label := TypewriterLabel.new()
 	add_child(label)
-	var vitesse: VitesseEcriture = paragraphe.vitesse_override if paragraphe.vitesse_override != null else livre.vitesse_ecriture_defaut
-	label.preparer(paragraphe.texte, vitesse)
+	var speed: TypingSpeed = paragraph.speed_override if paragraph.speed_override != null else book.default_typing_speed
+	label.prepare(paragraph.text, speed)
 	await get_tree().process_frame
 
-	var predecesseurs := get_children().filter(func(c): return c != label)
-	if not predecesseurs.is_empty():
-		var hauteur_utilisee: float = predecesseurs.size() * get_theme_constant("separation")
-		for enfant in predecesseurs:
-			hauteur_utilisee += enfant.size.y
-		if hauteur_utilisee + label.get_content_height() > size.y:
-			for enfant in predecesseurs:
-				enfant.queue_free()
+	var previous_children := get_children().filter(func(c): return c != label)
+	if not previous_children.is_empty():
+		var used_height: float = previous_children.size() * get_theme_constant("separation")
+		for child in previous_children:
+			used_height += child.size.y
+		if used_height + label.get_content_height() > size.y:
+			for child in previous_children:
+				child.queue_free()
 
-	label.demarrer()
-	_label_en_cours = label
-	paragraphe_affiche.emit(paragraphe)
+	label.start()
+	_current_label = label
+	paragraph_displayed.emit(paragraph)
 
-func _vider_page() -> void:
-	for enfant in get_children():
-		enfant.queue_free()
-	_label_en_cours = null
+func _clear_page() -> void:
+	for child in get_children():
+		child.queue_free()
+	_current_label = null
